@@ -8,9 +8,21 @@ import mediapipe as mp
 import winsound
 import os
 from datetime import datetime
+import sys
 
-# Set up logging
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+# Set up logging with more detailed format
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.StreamHandler(sys.stdout)
+    ]
+)
+
+# Log system information
+logging.info(f"OpenCV version: {cv2.__version__}")
+logging.info(f"CUDA available: {torch.cuda.is_available()}")
+logging.info(f"Current directory: {os.getcwd()}")
 
 class ObjectDetector:
     def __init__(self):
@@ -250,14 +262,19 @@ def main():
         text_box = TextBox()
         
         # Initialize webcam
+        logging.info("Initializing webcam...")
         cap = cv2.VideoCapture(0)
         if not cap.isOpened():
-            raise Exception("Failed to open webcam")
+            logging.error("Failed to open webcam. Please ensure your webcam is connected and not in use by another application.")
+            raise Exception("Failed to open webcam. Please check your camera connection.")
         
         # Set lower resolution for better performance
-        cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
-        cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
+        if not cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640):
+            logging.warning("Failed to set webcam width")
+        if not cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480):
+            logging.warning("Failed to set webcam height")
         
+        logging.info("Webcam initialized successfully")
         logging.info("Press 'q' to quit")
         logging.info("Press 't' to filter objects (separate multiple objects with commas)")
         logging.info("Press 'enter' to confirm")
