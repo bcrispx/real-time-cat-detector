@@ -10,18 +10,27 @@ A real-time object detection system with special focus on cat detection, built u
 - Object filtering capabilities
 - GPU acceleration when available
 
-## Requirements
+## Quick Start
+### Option 1: Download and Run Executable
+1. Go to the [Releases](https://github.com/bcrispx/real-time-cat-detector/releases) page
+2. Download the latest `CatDetector.exe`
+3. Double-click to run the application
+
+Note: The executable is currently only available for Windows systems.
+
+### Option 2: Install from Source
+#### Requirements
 - Python 3.8+
 - Webcam
 - NVIDIA GPU (optional, for faster inference)
 
-## Installation
+#### Installation
 1. Install the required packages:
 ```bash
 pip install -r requirements.txt
 ```
 
-## Usage
+#### Usage
 Run the main script:
 ```bash
 python realtime_classifier.py
