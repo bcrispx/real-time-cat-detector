@@ -5,10 +5,10 @@ from ultralytics import YOLO
 import torch
 import logging
 import mediapipe as mp
-import winsound
 import os
 from datetime import datetime
 import sys
+import pygame
 
 # Set up logging with more detailed format
 logging.basicConfig(
@@ -61,6 +61,17 @@ class ObjectDetector:
                 'window': 'window'
             }
             
+            # Initialize pygame for audio
+            pygame.mixer.init()
+            # Generate a gentle beep sound
+            sample_rate = 44100
+            duration = 0.15  # 150ms
+            frequency = 600  # 600Hz
+            t = np.linspace(0, duration, int(sample_rate * duration))
+            beep_data = np.sin(2 * np.pi * frequency * t)
+            beep_data = np.int16(beep_data * 32767)  # Convert to 16-bit integer
+            self.beep_sound = pygame.mixer.Sound(beep_data)
+            
             # Sound effect settings
             self.last_cat_sound = datetime.min
             self.sound_cooldown = 1.0  # seconds between sounds
@@ -95,8 +106,7 @@ class ObjectDetector:
         try:
             now = datetime.now()
             if (now - self.last_cat_sound).total_seconds() >= self.sound_cooldown:
-                # Play a gentler beep at 600 Hz for 150 ms
-                winsound.Beep(600, 150)
+                self.beep_sound.play()
                 self.last_cat_sound = now
         except Exception as e:
             logging.error(f"Error playing cat sound: {str(e)}")
