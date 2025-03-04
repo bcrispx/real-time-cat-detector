@@ -1,6 +1,12 @@
-# Real-time Cat Detector v1.0.0
+# Real-time Cat Detector v1.0.1
 
 First release of the Real-time Cat Detector! This application uses your webcam to detect cats and other objects in real-time, providing gentle audio feedback when cats are detected.
+
+## What's New in v1.0.1
+- 🔊 Cross-platform audio support (Windows, Linux, Jetson Nano)
+- 🛠️ Improved Linux installation experience
+- 🔧 Fixed PATH-related warnings on Linux systems
+- 📝 Enhanced documentation for Linux users
 
 ## Features
 - 🐱 Real-time cat detection with audio alerts
@@ -13,7 +19,7 @@ First release of the Real-time Cat Detector! This application uses your webcam t
 ## Quick Start
 
 ### Windows
-1. Download and extract `CatDetector-v1.0.0.zip`
+1. Download and extract `CatDetector-v1.0.1.zip`
 2. Open a terminal in the extracted directory
 3. Install dependencies:
    ```bash
@@ -29,7 +35,7 @@ First release of the Real-time Cat Detector! This application uses your webcam t
    ```
 
 ### Linux (including Jetson Nano)
-1. Download and extract `CatDetector-v1.0.0.zip`
+1. Download and extract `CatDetector-v1.0.1.zip`
 2. Open a terminal in the extracted directory
 3. Make the setup script executable:
    ```bash
