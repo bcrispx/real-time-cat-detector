@@ -23,15 +23,27 @@ logging.basicConfig(
 is_jetson = os.path.exists('/etc/nv_tegra_release')
 if is_jetson:
     logging.info("Detected Jetson Nano platform")
-    # Set CUDA device if available
-    if torch.cuda.is_available():
-        torch.cuda.set_device(0)
+    # Try to force CUDA initialization
+    if not torch.cuda.is_available():
+        logging.warning("CUDA not available initially, attempting to force initialization...")
+        try:
+            # Try to manually set CUDA_VISIBLE_DEVICES
+            os.environ['CUDA_VISIBLE_DEVICES'] = '0'
+            # Force torch to reinitialize CUDA
+            torch.cuda.init()
+            # Clear the cache
+            torch.cuda.empty_cache()
+            logging.info("CUDA initialization attempted")
+        except Exception as e:
+            logging.error(f"Error during CUDA initialization: {str(e)}")
+    
     # Log CUDA information
     logging.info(f"CUDA initialization: {torch.cuda.is_initialized()}")
     logging.info(f"CUDA device count: {torch.cuda.device_count()}")
     if torch.cuda.is_available():
         logging.info(f"CUDA device name: {torch.cuda.get_device_name(0)}")
         logging.info(f"CUDA device capability: {torch.cuda.get_device_capability(0)}")
+        logging.info(f"CUDA version: {torch.version.cuda}")
 
 # Log system information
 logging.info(f"OpenCV version: {cv2.__version__}")
@@ -50,6 +62,9 @@ class ObjectDetector:
                 # Ensure CUDA is initialized
                 if not torch.cuda.is_initialized():
                     torch.cuda.init()
+                # Try to optimize CUDA performance
+                torch.backends.cudnn.benchmark = True
+                torch.backends.cudnn.fastest = True
                 logging.info(f"CUDA memory allocated: {torch.cuda.memory_allocated(0)}")
                 logging.info(f"CUDA memory cached: {torch.cuda.memory_reserved(0)}")
             
