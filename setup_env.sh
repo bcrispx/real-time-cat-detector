@@ -27,7 +27,7 @@ if [ -f "/etc/nv_tegra_release" ]; then
     
     # Remove any existing torch installations
     echo "Removing existing PyTorch installations..."
-    pip uninstall -y torch torchvision
+    sudo pip3 uninstall -y torch torchvision
     
     # Install Jetson-specific dependencies
     echo "Installing Jetson dependencies..."
@@ -41,18 +41,24 @@ if [ -f "/etc/nv_tegra_release" ]; then
     # Install Jetson-specific PyTorch
     echo "Installing Jetson-specific PyTorch..."
     
-    # First try the official NVIDIA wheels
-    wget https://developer.download.nvidia.com/compute/redist/jp/v51/pytorch/torch-2.0.0+nv23.05-cp38-cp38-linux_aarch64.whl
+    # Try installing PyTorch 1.11 which is known to work well with Jetson
+    echo "Installing PyTorch 1.11 for Jetson..."
+    sudo apt-get install -y python3-pip
+    sudo pip3 install numpy==1.19.4
+    
+    # Download and install specific PyTorch wheel for Jetson
+    wget https://nvidia.box.com/shared/static/p57jwntv436lfrd78inwl7iml6p13fzh.whl -O torch-1.11.0-cp36-cp36m-linux_aarch64.whl
     if [ $? -eq 0 ]; then
         echo "Installing PyTorch from NVIDIA wheel..."
-        pip install torch-2.0.0+nv23.05-cp38-cp38-linux_aarch64.whl
-        rm torch-2.0.0+nv23.05-cp38-cp38-linux_aarch64.whl
+        sudo pip3 install torch-1.11.0-cp36-cp36m-linux_aarch64.whl
+        rm torch-1.11.0-cp36-cp36m-linux_aarch64.whl
         
         # Install corresponding torchvision
-        pip install torchvision==0.15.2
+        sudo pip3 install torchvision==0.12.0
     else
-        echo "Failed to download NVIDIA wheel, trying JetPack repository..."
-        python3 -m pip install --no-cache-dir torch torchvision --extra-index-url https://developer.download.nvidia.com/compute/redist/jp/v51/
+        echo "Failed to download NVIDIA wheel, trying alternative source..."
+        # Try installing from NVIDIA repository
+        sudo pip3 install --no-cache torch torchvision --extra-index-url https://developer.download.nvidia.com/compute/redist/jp/v46
     fi
     
     # Verify PyTorch installation
@@ -71,7 +77,7 @@ else:
     
     # Install other dependencies excluding torch and torchvision
     echo "Installing other dependencies..."
-    grep -v "torch\|torchvision" requirements.txt | xargs -r pip install --user
+    grep -v "torch\|torchvision" requirements.txt | xargs -r sudo pip3 install
 else
     # Install all dependencies normally on non-Jetson platforms
     pip install --user -r requirements.txt
