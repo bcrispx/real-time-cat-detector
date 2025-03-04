@@ -19,8 +19,23 @@ logging.basicConfig(
     ]
 )
 
+# Check if running on Jetson Nano
+is_jetson = os.path.exists('/etc/nv_tegra_release')
+if is_jetson:
+    logging.info("Detected Jetson Nano platform")
+    # Set CUDA device if available
+    if torch.cuda.is_available():
+        torch.cuda.set_device(0)
+    # Log CUDA information
+    logging.info(f"CUDA initialization: {torch.cuda.is_initialized()}")
+    logging.info(f"CUDA device count: {torch.cuda.device_count()}")
+    if torch.cuda.is_available():
+        logging.info(f"CUDA device name: {torch.cuda.get_device_name(0)}")
+        logging.info(f"CUDA device capability: {torch.cuda.get_device_capability(0)}")
+
 # Log system information
 logging.info(f"OpenCV version: {cv2.__version__}")
+logging.info(f"PyTorch version: {torch.__version__}")
 logging.info(f"CUDA available: {torch.cuda.is_available()}")
 logging.info(f"Current directory: {os.getcwd()}")
 
@@ -31,9 +46,18 @@ class ObjectDetector:
             self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
             logging.info(f"Using device: {self.device}")
             
+            if self.device == 'cuda':
+                # Ensure CUDA is initialized
+                if not torch.cuda.is_initialized():
+                    torch.cuda.init()
+                logging.info(f"CUDA memory allocated: {torch.cuda.memory_allocated(0)}")
+                logging.info(f"CUDA memory cached: {torch.cuda.memory_reserved(0)}")
+            
             # Initialize YOLOv8 for general object detection
             logging.info("Loading YOLOv8 model...")
             self.yolo_model = YOLO('yolov8n.pt')
+            if self.device == 'cuda':
+                self.yolo_model.to(self.device)
             
             # Initialize MediaPipe for face and facial features
             self.mp_face_mesh = mp.solutions.face_mesh
