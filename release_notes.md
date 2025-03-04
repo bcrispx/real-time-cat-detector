@@ -1,6 +1,11 @@
-# Real-time Cat Detector v1.0.1
+# Real-time Cat Detector v1.0.2
 
 First release of the Real-time Cat Detector! This application uses your webcam to detect cats and other objects in real-time, providing gentle audio feedback when cats are detected.
+
+## What's New in v1.0.2
+- 🎮 Fixed CUDA detection on Jetson Nano
+- 🚀 Automatic Jetson-specific PyTorch installation
+- 📝 Enhanced Jetson Nano setup documentation
 
 ## What's New in v1.0.1
 - 🔊 Cross-platform audio support (Windows, Linux, Jetson Nano)
@@ -19,7 +24,7 @@ First release of the Real-time Cat Detector! This application uses your webcam t
 ## Quick Start
 
 ### Windows
-1. Download and extract `CatDetector-v1.0.1.zip`
+1. Download and extract `CatDetector-v1.0.2.zip`
 2. Open a terminal in the extracted directory
 3. Install dependencies:
    ```bash
@@ -35,7 +40,7 @@ First release of the Real-time Cat Detector! This application uses your webcam t
    ```
 
 ### Linux (including Jetson Nano)
-1. Download and extract `CatDetector-v1.0.1.zip`
+1. Download and extract `CatDetector-v1.0.2.zip`
 2. Open a terminal in the extracted directory
 3. Make the setup script executable:
    ```bash
@@ -66,5 +71,5 @@ First release of the Real-time Cat Detector! This application uses your webcam t
 ## Notes
 - On first run, the program will download the YOLOv8 model (~6MB)
 - The program will create a `.cache` directory in your user folder to store the downloaded model
-- Enhanced logging is enabled to help diagnose any potential issues
 - On Linux systems, packages are installed in `~/.local/bin`. The setup script will automatically add this to your PATH
+- On Jetson Nano, the setup script will automatically install the correct CUDA-enabled PyTorch version
