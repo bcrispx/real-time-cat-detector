@@ -17,6 +17,7 @@ if [ -f "/etc/nv_tegra_release" ]; then
     echo "System information:"
     cat /etc/nv_tegra_release
     nvidia-smi
+    python3 --version
     
     # Check CUDA installation
     echo "CUDA installation:"
@@ -41,24 +42,20 @@ if [ -f "/etc/nv_tegra_release" ]; then
     # Install Jetson-specific PyTorch
     echo "Installing Jetson-specific PyTorch..."
     
-    # Try installing PyTorch 1.11 which is known to work well with Jetson
-    echo "Installing PyTorch 1.11 for Jetson..."
-    sudo apt-get install -y python3-pip
-    sudo pip3 install numpy==1.19.4
+    # Try installing from NVIDIA repository first
+    echo "Installing PyTorch from NVIDIA repository..."
+    sudo pip3 install --no-cache --verbose torch torchvision --extra-index-url https://developer.download.nvidia.com/compute/redist/jp/v46
     
-    # Download and install specific PyTorch wheel for Jetson
-    wget https://nvidia.box.com/shared/static/p57jwntv436lfrd78inwl7iml6p13fzh.whl -O torch-1.11.0-cp36-cp36m-linux_aarch64.whl
-    if [ $? -eq 0 ]; then
-        echo "Installing PyTorch from NVIDIA wheel..."
-        sudo pip3 install torch-1.11.0-cp36-cp36m-linux_aarch64.whl
-        rm torch-1.11.0-cp36-cp36m-linux_aarch64.whl
-        
-        # Install corresponding torchvision
-        sudo pip3 install torchvision==0.12.0
-    else
-        echo "Failed to download NVIDIA wheel, trying alternative source..."
-        # Try installing from NVIDIA repository
-        sudo pip3 install --no-cache torch torchvision --extra-index-url https://developer.download.nvidia.com/compute/redist/jp/v46
+    # If that fails, try the JetPack 5.0.2 repository
+    if ! python3 -c "import torch; assert torch.cuda.is_available()" 2>/dev/null; then
+        echo "First attempt failed, trying JetPack 5.0.2 repository..."
+        sudo pip3 install --no-cache --verbose torch torchvision --extra-index-url https://developer.download.nvidia.com/compute/redist/jp/v502
+    fi
+    
+    # If that still fails, try one more repository
+    if ! python3 -c "import torch; assert torch.cuda.is_available()" 2>/dev/null; then
+        echo "Second attempt failed, trying alternative repository..."
+        sudo pip3 install --no-cache --verbose torch torchvision --extra-index-url https://developer.download.nvidia.com/compute/redist/jp/v51
     fi
     
     # Verify PyTorch installation
