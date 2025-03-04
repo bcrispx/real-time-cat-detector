@@ -34,14 +34,25 @@ if [ -f "/etc/nv_tegra_release" ]; then
     sudo apt-get update
     sudo apt-get install -y python3-pip libopenblas-base libopenmpi-dev
     
+    # Get JetPack version
+    jetpack_version=$(cat /etc/nv_tegra_release | grep "R$" | cut -d ' ' -f 2 | cut -d '-' -f 2)
+    echo "JetPack version detected: $jetpack_version"
+    
     # Install Jetson-specific PyTorch
     echo "Installing Jetson-specific PyTorch..."
     
-    # Try the JetPack 5.1 version first
-    if ! python3 -m pip install --no-cache-dir torch torchvision --extra-index-url https://developer.download.nvidia.com/compute/redist/jp/v51/; then
-        echo "Failed to install from JetPack 5.1 repository, trying alternative source..."
-        # If that fails, try the PyTorch pip wheel for aarch64
-        python3 -m pip install --no-cache-dir torch torchvision --index-url https://download.pytorch.org/whl/nightly/cu118
+    # First try the official NVIDIA wheels
+    wget https://developer.download.nvidia.com/compute/redist/jp/v51/pytorch/torch-2.0.0+nv23.05-cp38-cp38-linux_aarch64.whl
+    if [ $? -eq 0 ]; then
+        echo "Installing PyTorch from NVIDIA wheel..."
+        pip install torch-2.0.0+nv23.05-cp38-cp38-linux_aarch64.whl
+        rm torch-2.0.0+nv23.05-cp38-cp38-linux_aarch64.whl
+        
+        # Install corresponding torchvision
+        pip install torchvision==0.15.2
+    else
+        echo "Failed to download NVIDIA wheel, trying JetPack repository..."
+        python3 -m pip install --no-cache-dir torch torchvision --extra-index-url https://developer.download.nvidia.com/compute/redist/jp/v51/
     fi
     
     # Verify PyTorch installation
@@ -54,6 +65,8 @@ if torch.cuda.is_available():
     print(f'CUDA version: {torch.version.cuda}')
     print(f'Device name: {torch.cuda.get_device_name(0)}')
     print(f'Device count: {torch.cuda.device_count()}')
+else:
+    print('Torch build info:', torch.__config__.show())
 "
     
     # Install other dependencies excluding torch and torchvision
