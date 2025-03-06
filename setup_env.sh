@@ -37,6 +37,7 @@ if [ -f "/etc/nv_tegra_release" ]; then
     
     # Remove any existing torch installations
     echo "Removing existing PyTorch installations..."
+    sudo apt-get remove -y python3-torch python3-torch-cuda
     sudo pip3 uninstall -y torch torchvision
     
     # Install Jetson-specific dependencies
@@ -52,22 +53,29 @@ if [ -f "/etc/nv_tegra_release" ]; then
     # Install Jetson-specific PyTorch
     echo "Installing Jetson-specific PyTorch..."
     
-    # Try installing from NVIDIA's PyTorch pip wheels for Jetson
-    echo "Installing PyTorch from NVIDIA wheels..."
+    # First try apt installation which should get the correct CUDA-enabled version
+    echo "Installing PyTorch using apt..."
+    sudo apt-get install -y python3-torch python3-torch-cuda
     
-    # First try installing torch 1.10.0
-    sudo pip3 install --no-cache-dir torch==1.10.0 torchvision==0.11.0 -f https://torch.kmtea.eu/whl/stable.html
-    
-    # Check if CUDA is available
+    # Verify the installation
     if ! python3 -c "import torch; assert torch.cuda.is_available()" 2>/dev/null; then
-        echo "First attempt failed, trying PyTorch 1.9.0..."
-        sudo pip3 install --no-cache-dir torch==1.9.0 torchvision==0.10.0 -f https://torch.kmtea.eu/whl/stable.html
+        echo "Apt installation didn't enable CUDA, trying pip installation..."
+        # Try pip installation with specific version known to work on Jetson
+        sudo pip3 install --no-cache-dir torch==1.8.0 torchvision==0.9.0 --extra-index-url https://developer.download.nvidia.com/compute/redist/jp/v461
     fi
     
-    # If that still fails, try one more version
+    # If that still fails, try the official NVIDIA forums solution
     if ! python3 -c "import torch; assert torch.cuda.is_available()" 2>/dev/null; then
-        echo "Second attempt failed, trying PyTorch 1.8.0..."
-        sudo pip3 install --no-cache-dir torch==1.8.0 torchvision==0.9.0 -f https://torch.kmtea.eu/whl/stable.html
+        echo "Trying official NVIDIA solution..."
+        # Install dependencies
+        sudo apt-get install -y libopenblas-base libopenmpi-dev
+        
+        # Download and install the wheel directly from NVIDIA
+        wget https://nvidia.box.com/shared/static/fjtbwnd5kunq5c3xz77blq9noafeq8vk.whl -O torch-1.8.0-cp36-cp36m-linux_aarch64.whl
+        sudo pip3 install torch-1.8.0-cp36-cp36m-linux_aarch64.whl
+        
+        # Install compatible torchvision
+        sudo pip3 install --no-cache-dir torchvision==0.9.0
     fi
     
     # Verify PyTorch installation and CUDA status
