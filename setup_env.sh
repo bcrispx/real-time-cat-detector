@@ -24,7 +24,16 @@ if [ -f "/etc/nv_tegra_release" ]; then
     if [ -f "/usr/local/cuda/version.txt" ]; then
         cat /usr/local/cuda/version.txt
     fi
-    ldconfig -p | grep cuda
+    echo "CUDA Path:"
+    which nvcc
+    echo "CUDA Libraries:"
+    ldconfig -p | grep -i cuda
+    echo "CUDA Environment:"
+    env | grep -i cuda
+    
+    # Try to detect JetPack version more reliably
+    echo "Detecting JetPack version..."
+    dpkg-query --show nvidia-l4t-core | grep -Po '(?<=-).*' || echo "Could not detect version"
     
     # Remove any existing torch installations
     echo "Removing existing PyTorch installations..."
@@ -33,35 +42,40 @@ if [ -f "/etc/nv_tegra_release" ]; then
     # Install Jetson-specific dependencies
     echo "Installing Jetson dependencies..."
     sudo apt-get update
-    sudo apt-get install -y python3-pip libopenblas-base libopenmpi-dev
+    sudo apt-get install -y python3-pip libopenblas-base libopenmpi-dev python3-numpy python3-dev
     
-    # Get JetPack version
-    jetpack_version=$(cat /etc/nv_tegra_release | grep "R$" | cut -d ' ' -f 2 | cut -d '-' -f 2)
-    echo "JetPack version detected: $jetpack_version"
+    # Set CUDA environment variables
+    export CUDA_HOME=/usr/local/cuda
+    export PATH=$CUDA_HOME/bin:$PATH
+    export LD_LIBRARY_PATH=$CUDA_HOME/lib64:$LD_LIBRARY_PATH
     
     # Install Jetson-specific PyTorch
     echo "Installing Jetson-specific PyTorch..."
     
-    # Try installing from NVIDIA repository first
-    echo "Installing PyTorch from NVIDIA repository..."
-    sudo pip3 install --no-cache --verbose torch torchvision --extra-index-url https://developer.download.nvidia.com/compute/redist/jp/v46
+    # Try installing from NVIDIA's PyTorch pip wheels for Jetson
+    echo "Installing PyTorch from NVIDIA wheels..."
     
-    # If that fails, try the JetPack 5.0.2 repository
+    # First try installing torch 1.10.0
+    sudo pip3 install --no-cache-dir torch==1.10.0 torchvision==0.11.0 -f https://torch.kmtea.eu/whl/stable.html
+    
+    # Check if CUDA is available
     if ! python3 -c "import torch; assert torch.cuda.is_available()" 2>/dev/null; then
-        echo "First attempt failed, trying JetPack 5.0.2 repository..."
-        sudo pip3 install --no-cache --verbose torch torchvision --extra-index-url https://developer.download.nvidia.com/compute/redist/jp/v502
+        echo "First attempt failed, trying PyTorch 1.9.0..."
+        sudo pip3 install --no-cache-dir torch==1.9.0 torchvision==0.10.0 -f https://torch.kmtea.eu/whl/stable.html
     fi
     
-    # If that still fails, try one more repository
+    # If that still fails, try one more version
     if ! python3 -c "import torch; assert torch.cuda.is_available()" 2>/dev/null; then
-        echo "Second attempt failed, trying alternative repository..."
-        sudo pip3 install --no-cache --verbose torch torchvision --extra-index-url https://developer.download.nvidia.com/compute/redist/jp/v51
+        echo "Second attempt failed, trying PyTorch 1.8.0..."
+        sudo pip3 install --no-cache-dir torch==1.8.0 torchvision==0.9.0 -f https://torch.kmtea.eu/whl/stable.html
     fi
     
-    # Verify PyTorch installation
+    # Verify PyTorch installation and CUDA status
     echo "Verifying PyTorch installation..."
     python3 -c "
 import torch
+import sys
+print(f'Python version: {sys.version}')
 print(f'PyTorch version: {torch.__version__}')
 print(f'CUDA available: {torch.cuda.is_available()}')
 if torch.cuda.is_available():
@@ -70,6 +84,7 @@ if torch.cuda.is_available():
     print(f'Device count: {torch.cuda.device_count()}')
 else:
     print('Torch build info:', torch.__config__.show())
+    print('CUDA_HOME:', torch.utils.cpp_extension.CUDA_HOME)
 "
     
     # Install other dependencies excluding torch and torchvision
