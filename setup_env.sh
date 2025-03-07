@@ -43,7 +43,7 @@ if [ -f "/etc/nv_tegra_release" ]; then
     # Install Jetson-specific dependencies
     echo "Installing Jetson dependencies..."
     sudo apt-get update
-    sudo apt-get install -y python3-pip libopenblas-base libopenmpi-dev python3-numpy python3-dev
+    sudo apt-get install -y python3-pip libopenblas-dev python3-numpy python3-dev
     
     # Set CUDA environment variables
     export CUDA_HOME=/usr/local/cuda
@@ -53,30 +53,19 @@ if [ -f "/etc/nv_tegra_release" ]; then
     # Install Jetson-specific PyTorch
     echo "Installing Jetson-specific PyTorch..."
     
-    # Create a temporary directory for downloads
-    TEMP_DIR=$(mktemp -d)
-    cd $TEMP_DIR
+    # Install PyTorch using NVIDIA's recommended method
+    export TORCH_INSTALL=https://developer.download.nvidia.cn/compute/redist/jp/v511/pytorch/torch-2.0.0+nv23.05-cp38-cp38-linux_aarch64.whl
     
-    # Download and install the latest Jetson PyTorch wheel
-    echo "Downloading PyTorch for Jetson..."
-    wget https://developer.download.nvidia.com/compute/redist/jp/v512/pytorch/torch-2.1.0a0+41361538.nv23.11-cp38-cp38-linux_aarch64.whl
+    echo "Installing PyTorch from NVIDIA wheel..."
+    sudo python3 -m pip install --upgrade pip
+    sudo python3 -m pip install numpy==1.26.1
+    sudo python3 -m pip install --no-cache $TORCH_INSTALL
     
-    if [ $? -eq 0 ]; then
-        echo "Installing PyTorch..."
-        sudo pip3 install torch-2.1.0a0+41361538.nv23.11-cp38-cp38-linux_aarch64.whl
-        
-        echo "Installing torchvision..."
-        wget https://developer.download.nvidia.com/compute/redist/jp/v512/pytorch/torchvision-0.16.0a0+0b5855f.nv23.11-cp38-cp38-linux_aarch64.whl
-        sudo pip3 install torchvision-0.16.0a0+0b5855f.nv23.11-cp38-cp38-linux_aarch64.whl
-    else
-        echo "Failed to download PyTorch wheel, trying alternative method..."
-        # Try installing from NVIDIA repository
-        sudo pip3 install --no-cache-dir torch torchvision --extra-index-url https://developer.download.nvidia.com/compute/redist/jp/v512
+    # If that fails, try the alternative method
+    if ! python3 -c "import torch; assert torch.cuda.is_available()" 2>/dev/null; then
+        echo "Direct wheel installation failed, trying alternative method..."
+        sudo python3 -m pip install --no-cache-dir torch torchvision --extra-index-url https://developer.download.nvidia.com/compute/redist/jp/v511
     fi
-    
-    # Clean up
-    cd -
-    rm -rf $TEMP_DIR
     
     # Verify PyTorch installation and CUDA status
     echo "Verifying PyTorch installation..."
@@ -90,9 +79,6 @@ if torch.cuda.is_available():
     print(f'CUDA version: {torch.version.cuda}')
     print(f'Device name: {torch.cuda.get_device_name(0)}')
     print(f'Device count: {torch.cuda.device_count()}')
-else:
-    print('Torch build info:', torch.__config__.show())
-    print('CUDA_HOME:', torch.utils.cpp_extension.CUDA_HOME)
 "
     
     # Install other dependencies excluding torch and torchvision
