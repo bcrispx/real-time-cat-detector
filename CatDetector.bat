@@ -1,4 +1,12 @@
 @echo off
-echo Starting Cat Detector...
+:: Activate virtual environment
+call venv\Scripts\activate.bat
+
+:: Run the classifier
 python realtime_classifier.py
-pause
+
+:: Keep the window open if there's an error
+if errorlevel 1 pause
+
+:: Deactivate virtual environment
+deactivate
