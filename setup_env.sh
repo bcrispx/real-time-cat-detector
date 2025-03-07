@@ -53,19 +53,31 @@ if [ -f "/etc/nv_tegra_release" ]; then
     # Install Jetson-specific PyTorch
     echo "Installing Jetson-specific PyTorch..."
     
-    # Install PyTorch using NVIDIA's recommended method
-    export TORCH_INSTALL=https://developer.download.nvidia.cn/compute/redist/jp/v511/pytorch/torch-2.0.0+nv23.05-cp38-cp38-linux_aarch64.whl
+    # Create and activate a virtual environment
+    echo "Creating Python virtual environment..."
+    sudo apt-get install -y python3-venv
+    python3 -m venv ~/torch_env
+    source ~/torch_env/bin/activate
     
-    echo "Installing PyTorch from NVIDIA wheel..."
-    sudo python3 -m pip install --upgrade pip
-    sudo python3 -m pip install numpy==1.26.1
-    sudo python3 -m pip install --no-cache $TORCH_INSTALL
+    # Install PyTorch using NVIDIA's latest wheel for Python 3.10
+    echo "Installing PyTorch from NVIDIA repository..."
+    python3 -m pip install --upgrade pip
+    python3 -m pip install numpy==1.26.1
     
-    # If that fails, try the alternative method
-    if ! python3 -c "import torch; assert torch.cuda.is_available()" 2>/dev/null; then
-        echo "Direct wheel installation failed, trying alternative method..."
-        sudo python3 -m pip install --no-cache-dir torch torchvision --extra-index-url https://developer.download.nvidia.com/compute/redist/jp/v511
-    fi
+    # Try installing from NVIDIA's L4T repository
+    sudo apt-get install -y software-properties-common
+    sudo apt-key adv --fetch-keys https://repo.download.nvidia.com/jetson/jetson-ota-public.asc
+    
+    # Add NVIDIA's L4T repository
+    source /etc/os-release
+    echo "deb https://repo.download.nvidia.com/jetson/common r${VERSION_ID} main" | sudo tee /etc/apt/sources.list.d/nvidia-l4t-apt-source.list
+    echo "deb https://repo.download.nvidia.com/jetson/t210 r${VERSION_ID} main" | sudo tee -a /etc/apt/sources.list.d/nvidia-l4t-apt-source.list
+    
+    sudo apt-get update
+    sudo apt-get install -y python3-pip libjpeg-dev zlib1g-dev libpython3-dev libopenblas-dev
+    
+    # Install PyTorch and torchvision
+    pip3 install --no-cache-dir torch==1.11.0+nv22.4 torchvision==0.12.0+nv22.4 -f https://developer.download.nvidia.com/compute/redist/jp/v50/pytorch/
     
     # Verify PyTorch installation and CUDA status
     echo "Verifying PyTorch installation..."
@@ -83,7 +95,10 @@ if torch.cuda.is_available():
     
     # Install other dependencies excluding torch and torchvision
     echo "Installing other dependencies..."
-    grep -v "torch\|torchvision" requirements.txt | xargs -r sudo pip3 install
+    grep -v "torch\|torchvision" requirements.txt | xargs -r pip3 install
+    
+    # Deactivate virtual environment
+    deactivate
 else
     # Install all dependencies normally on non-Jetson platforms
     pip install --user -r requirements.txt
@@ -95,3 +110,4 @@ source ~/.bashrc
 echo "Environment setup complete!"
 echo "If you see any PATH warnings, please run: source ~/.bashrc"
 echo "or restart your terminal to apply the changes."
+echo "To use PyTorch, activate the virtual environment with: source ~/torch_env/bin/activate"
